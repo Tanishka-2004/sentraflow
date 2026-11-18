@@ -6,7 +6,7 @@ locals {
 
 # 1. Medallion Layer S3 Buckets
 resource "aws_s3_bucket" "lakehouse_buckets" {
-  for_each = toset(locals.layers)
+  for_each = toset(local.layers)
 
   bucket        = "${var.lakehouse_bucket_prefix}-${each.key}-${var.environment}"
   force_destroy = var.environment != "prod"
