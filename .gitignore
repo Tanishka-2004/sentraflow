@@ -48,4 +48,5 @@ landing/
 
 # OS generated files
 .DS_Store
+*.tsbuildinfo
 Thumbs.db

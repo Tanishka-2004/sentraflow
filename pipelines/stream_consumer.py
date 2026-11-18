@@ -8,11 +8,11 @@ import psycopg2
 from datetime import datetime
 from decimal import Decimal
 
-# Configs
+# Configs (supports Vercel Service Bindings: ML_SERVICE_URL, BACKEND_URL)
 DB_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/sentraflow")
 KAFKA_BROKERS = os.getenv("KAFKA_BROKERS", "localhost:9092")
-ML_SERVICE_URL = os.getenv("ML_SERVICE_URL", "http://localhost:8001")
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+ML_SERVICE_URL = os.getenv("ML_SERVICE_URL", "http://localhost:8001").rstrip("/")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000").rstrip("/")
 
 def get_db_connection():
     return psycopg2.connect(DB_URL)

@@ -17,8 +17,8 @@ class Settings:
     AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "minioadmin")
     AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY", "minioadmin")
     
-    # Microservices
-    ML_SERVICE_URL: str = os.getenv("ML_SERVICE_URL", "http://localhost:8001")
+    # Microservices (supports Vercel Service Binding: ML_SERVICE_URL)
+    ML_SERVICE_URL: str = os.getenv("ML_SERVICE_URL", "http://localhost:8001").rstrip("/")
     
     # Security
     JWT_SECRET: str = os.getenv("JWT_SECRET", "supersecretjwtkeyforlocaldevelopment1234567890")

@@ -1,9 +1,34 @@
 /**
  * SentraFlow API Client.
  * Connects to the FastAPI backend with JWT authorization and error handling.
+ * Supports Vercel Service Bindings (resolved at runtime in functions via process.env.API_URL / BACKEND_URL)
+ * as well as client-side public URLs and same-domain rewrites.
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+export function getApiBaseUrl(): string {
+  // 1. Runtime function / server-side: internal Vercel Service Binding takes precedence
+  if (typeof window === "undefined") {
+    const bound = process.env.API_URL || process.env.BACKEND_URL;
+    if (bound) {
+      return bound.replace(/\/$/, "");
+    }
+  }
+
+  // 2. Explicit public environment variable
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
+  }
+
+  // 3. Client-side browser: relative path when routed via Vercel top-level rewrites
+  if (typeof window !== "undefined") {
+    return "";
+  }
+
+  // 4. Local development fallback
+  return "http://localhost:8000";
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 export interface UserProfile {
   id: number;
@@ -119,6 +144,10 @@ export interface DQScorecard {
 }
 
 class ApiClient {
+  private getBaseUrl(): string {
+    return getApiBaseUrl();
+  }
+
   private getHeaders(): HeadersInit {
     const headers: HeadersInit = {
       "Content-Type": "application/json",
@@ -133,7 +162,7 @@ class ApiClient {
   }
 
   async login(email: string, password: string): Promise<AuthTokens> {
-    const res = await fetch(`${API_BASE_URL}/auth/token`, {
+    const res = await fetch(`${this.getBaseUrl()}/auth/token`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -148,7 +177,7 @@ class ApiClient {
   }
 
   async getMe(): Promise<UserProfile> {
-    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+    const res = await fetch(`${this.getBaseUrl()}/auth/me`, {
       headers: this.getHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to fetch user profile`);
@@ -156,7 +185,7 @@ class ApiClient {
   }
 
   async getTransactions(page: number = 1, pageSize: number = 20): Promise<{ total: number; items: Transaction[] }> {
-    const res = await fetch(`${API_BASE_URL}/transactions?page=${page}&page_size=${pageSize}`, {
+    const res = await fetch(`${this.getBaseUrl()}/transactions?page=${page}&page_size=${pageSize}`, {
       headers: this.getHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to fetch transactions`);
@@ -164,7 +193,7 @@ class ApiClient {
   }
 
   async getFraudQueue(): Promise<FraudQueueItem[]> {
-    const res = await fetch(`${API_BASE_URL}/fraud/queue`, {
+    const res = await fetch(`${this.getBaseUrl()}/fraud/queue`, {
       headers: this.getHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to fetch fraud queue`);
@@ -172,7 +201,7 @@ class ApiClient {
   }
 
   async getFraudExplanation(txnId: string): Promise<FraudExplanation> {
-    const res = await fetch(`${API_BASE_URL}/fraud/${txnId}/explanation`, {
+    const res = await fetch(`${this.getBaseUrl()}/fraud/${txnId}/explanation`, {
       headers: this.getHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to fetch explanation for ${txnId}`);
@@ -180,7 +209,7 @@ class ApiClient {
   }
 
   async overrideFraudDecision(txnId: string, decision: "CONFIRMED_FRAUD" | "FALSE_POSITIVE", notes: string): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/fraud/${txnId}/override`, {
+    const res = await fetch(`${this.getBaseUrl()}/fraud/${txnId}/override`, {
       method: "POST",
       headers: this.getHeaders(),
       body: JSON.stringify({ decision, notes }),
@@ -190,7 +219,7 @@ class ApiClient {
   }
 
   async getLineageGraph(): Promise<LineageGraph> {
-    const res = await fetch(`${API_BASE_URL}/lineage/graph`, {
+    const res = await fetch(`${this.getBaseUrl()}/lineage/graph`, {
       headers: this.getHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to fetch lineage graph`);
@@ -198,7 +227,7 @@ class ApiClient {
   }
 
   async getGateRuns(): Promise<GateAuditRun[]> {
-    const res = await fetch(`${API_BASE_URL}/governance/gate-runs`, {
+    const res = await fetch(`${this.getBaseUrl()}/governance/gate-runs`, {
       headers: this.getHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to fetch gate audit runs`);
@@ -206,7 +235,7 @@ class ApiClient {
   }
 
   async getDQScorecard(): Promise<DQScorecard> {
-    const res = await fetch(`${API_BASE_URL}/dq/scorecard`, {
+    const res = await fetch(`${this.getBaseUrl()}/dq/scorecard`, {
       headers: this.getHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to fetch DQ scorecard`);
@@ -214,7 +243,7 @@ class ApiClient {
   }
 
   async triggerPipeline(dagId: string): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/pipelines/trigger/${dagId}`, {
+    const res = await fetch(`${this.getBaseUrl()}/pipelines/trigger/${dagId}`, {
       method: "POST",
       headers: this.getHeaders(),
     });

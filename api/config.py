@@ -18,6 +18,7 @@ class Settings(BaseModel):
         "DATABASE_URL",
         f"sqlite:///{Path(__file__).parent.parent / 'sentraflow_meta.db'}",
     )
+    ml_service_url: str = os.getenv("ML_SERVICE_URL", "http://localhost:8001").rstrip("/")
     cors_origins: list[str] = [
         "http://localhost:3000",
         "http://localhost:3001",

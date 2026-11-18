@@ -32,8 +32,28 @@ import {
 import { ReactFlow, Background, Controls, MiniMap } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-const API_BASE = "http://localhost:8000";
-const ML_API_BASE = "http://localhost:8001";
+function getFrontendApiBase(): string {
+  if (typeof window === "undefined" && process.env.BACKEND_URL) {
+    return process.env.BACKEND_URL.replace(/\/$/, "");
+  }
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
+  }
+  return typeof window !== "undefined" ? "" : "http://localhost:8000";
+}
+
+function getFrontendMlBase(): string {
+  if (typeof window === "undefined" && process.env.ML_SERVICE_URL) {
+    return process.env.ML_SERVICE_URL.replace(/\/$/, "");
+  }
+  if (process.env.NEXT_PUBLIC_ML_URL) {
+    return process.env.NEXT_PUBLIC_ML_URL.replace(/\/$/, "");
+  }
+  return typeof window !== "undefined" ? "" : "http://localhost:8001";
+}
+
+const API_BASE = getFrontendApiBase();
+const ML_API_BASE = getFrontendMlBase();
 
 export default function SentraFlowApp() {
   // Auth state
@@ -125,7 +145,10 @@ export default function SentraFlowApp() {
     if (!token) return;
     
     const connectWS = () => {
-      const ws = new WebSocket(`ws://localhost:8000/ws/alerts?token=${token}`);
+      const wsProto = typeof window !== "undefined" && window.location.protocol === "https:" ? "wss:" : "ws:";
+      const wsHost = typeof window !== "undefined" ? window.location.host : "localhost:8000";
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || `${wsProto}//${wsHost}/ws/alerts?token=${token}`;
+      const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
       setWsStatus("CONNECTING");
 
