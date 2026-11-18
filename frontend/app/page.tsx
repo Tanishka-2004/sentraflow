@@ -448,7 +448,7 @@ export default function SentraFlowApp() {
     }
   };
 
-  const handleToggleRule = async (ruleId: int) => {
+  const handleToggleRule = async (ruleId: number) => {
     const data = await apiCall(`/api/admin/pii-rules/${ruleId}/toggle`, "PATCH");
     if (data) {
       showToast("Rule status toggled.", "success");
