@@ -1,0 +1,111 @@
+name: SentraFlow Lakehouse CI/CD Gate
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-typecheck:
+    name: Code Quality & Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Linting Tools
+        run: |
+          pip install ruff black mypy
+
+      - name: Ruff Lint Check
+        run: ruff check .
+
+      - name: Black Formatting Check
+        run: black --check .
+
+  test-and-coverage:
+    name: Unit & Integration Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Project Dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Execute Pytest Suite (Target 80%+ Core Coverage)
+        run: |
+          PYTHONPATH=. pytest tests/ -v --cov=spark_jobs --cov=governance --cov=fraud --cov=lineage --cov=data_generator --cov-report=xml --cov-report=term
+
+  dbt-compile-and-validate:
+    name: dbt Star Schema Compilation & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run dbt Staging, Marts & Singular Tests
+        run: |
+          PYTHONPATH=. python -m pytest tests/test_gold_dbt.py -v
+
+  governance-gate-bypass-security-check:
+    name: Deliberate PII Gate Bypass Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify Gate Halts Pipeline On Injected PII
+        run: |
+          PYTHONPATH=. python -m pytest tests/test_governance_gate.py::test_pii_gate_deliberate_leak_blocks_pipeline -v
+          PYTHONPATH=. python -m pytest tests/test_lineage.py::test_zero_gate_bypass_enforcement -v
+
+  terraform-validate:
+    name: Terraform Infrastructure Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+
+      - name: Terraform Format Check
+        run: terraform -chdir=infra/terraform fmt -check
+
+      - name: Terraform Init & Validate
+        run: |
+          terraform -chdir=infra/terraform init -backend=false
+          terraform -chdir=infra/terraform validate
+

@@ -1,0 +1,83 @@
+version: 2
+
+models:
+  - name: dim_customer
+    description: "SCD Type 2 Customer dimension table containing governed demographics and KYC status."
+    columns:
+      - name: cust_sk
+        description: "Surrogate primary key for SCD2 version."
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "Natural business customer UUID."
+        tests:
+          - not_null
+      - name: pan
+        description: "Masked Permanent Account Number (XXXXX1234X)."
+        tests:
+          - not_null
+      - name: kyc_status
+        description: "Regulatory KYC compliance status."
+        tests:
+          - accepted_values:
+              values: ['VERIFIED', 'PENDING', 'REJECTED']
+
+  - name: dim_account
+    description: "Bank account dimension with masked account numbers and balance."
+    columns:
+      - name: account_id
+        description: "Primary key for account."
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "Foreign key referencing dim_customer."
+        tests:
+          - not_null
+      - name: status
+        tests:
+          - accepted_values:
+              values: ['ACTIVE', 'DORMANT', 'FROZEN']
+
+  - name: dim_merchant
+    description: "Merchant directory dimension."
+    columns:
+      - name: merchant_id
+        tests:
+          - unique
+          - not_null
+      - name: risk_tier
+        tests:
+          - accepted_values:
+              values: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
+
+  - name: fct_transactions
+    description: "Fact table recording all monetary transactions across channels."
+    columns:
+      - name: txn_id
+        tests:
+          - unique
+          - not_null
+      - name: amount
+        description: "Transaction amount in INR."
+        tests:
+          - not_null
+      - name: account_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_account')
+              field: account_id
+
+  - name: mart_customer_360
+    description: "Customer 360 analytical mart summarizing lifetime financial activity."
+    columns:
+      - name: customer_id
+        tests:
+          - unique
+          - not_null
+
+  - name: mart_fraud_kpis
+    description: "Executive fraud monitoring KPIs."
+

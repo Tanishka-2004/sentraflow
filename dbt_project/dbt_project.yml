@@ -1,0 +1,29 @@
+name: 'sentraflow_lakehouse'
+version: '1.0.0'
+config-version: 2
+
+profile: 'sentraflow'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  sentraflow_lakehouse:
+    staging:
+      +materialized: view
+      +tags: ["staging", "pii_safe"]
+    intermediate:
+      +materialized: view
+      +tags: ["intermediate", "pii_safe"]
+    marts:
+      +materialized: table
+      +tags: ["marts", "finance_critical", "pii_safe"]
+

@@ -1,0 +1,108 @@
+# SentraFlow Data Classification Registry
+# Defines enterprise data classification levels:
+# PUBLIC, INTERNAL, CONFIDENTIAL, PII_DIRECT, PII_QUASI
+
+columns:
+  customer_id:
+    classification: INTERNAL
+    category: identifier
+  full_name:
+    classification: PII_DIRECT
+    category: identity
+  email:
+    classification: PII_DIRECT
+    category: contact
+  phone:
+    classification: PII_DIRECT
+    category: contact
+  pan:
+    classification: PII_DIRECT
+    category: government_id
+  aadhaar_id:
+    classification: PII_DIRECT
+    category: government_id
+  date_of_birth:
+    classification: PII_QUASI
+    category: demographic
+  address:
+    classification: PII_QUASI
+    category: location
+  city:
+    classification: PUBLIC
+    category: location
+  state:
+    classification: PUBLIC
+    category: location
+  pincode:
+    classification: PII_QUASI
+    category: location
+  kyc_status:
+    classification: INTERNAL
+    category: compliance
+
+  account_id:
+    classification: INTERNAL
+    category: financial
+  account_number:
+    classification: PII_DIRECT
+    category: financial
+  ifsc:
+    classification: PUBLIC
+    category: financial
+  account_type:
+    classification: PUBLIC
+    category: financial
+  open_date:
+    classification: PUBLIC
+    category: temporal
+  status:
+    classification: PUBLIC
+    category: operational
+  balance:
+    classification: INTERNAL
+    category: financial
+
+  merchant_id:
+    classification: INTERNAL
+    category: merchant
+  name:
+    classification: PUBLIC
+    category: merchant
+  mcc_code:
+    classification: CONFIDENTIAL
+    category: merchant
+  risk_tier:
+    classification: CONFIDENTIAL
+    category: risk
+
+  txn_id:
+    classification: INTERNAL
+    category: transaction
+  amount:
+    classification: INTERNAL
+    category: financial
+  currency:
+    classification: PUBLIC
+    category: financial
+  channel:
+    classification: PUBLIC
+    category: payment_rail
+  txn_ts:
+    classification: INTERNAL
+    category: temporal
+  device_id:
+    classification: PII_QUASI
+    category: technical
+  ip_address:
+    classification: PII_QUASI
+    category: technical
+  lat:
+    classification: INTERNAL
+    category: location
+  lon:
+    classification: INTERNAL
+    category: location
+  is_fraud:
+    classification: CONFIDENTIAL
+    category: risk
+

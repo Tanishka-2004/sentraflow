@@ -1,0 +1,28 @@
+FROM apache/airflow:2.9.3-python3.12
+
+# Install Java 17 for PySpark
+USER root
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        openjdk-17-jdk-headless \
+        git \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set Java Home
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+RUN export JAVA_HOME
+
+# Switch back to airflow user to install python libraries
+USER airflow
+RUN pip install --no-cache-dir \
+    pyspark==3.5.1 \
+    dbt-core==1.8.3 \
+    dbt-postgres==1.8.2 \
+    minio==7.2.7 \
+    redis==5.0.8 \
+    psycopg2-binary==2.9.9 \
+    cryptography==42.0.8 \
+    confluent-kafka==2.4.0 \
+    pandas==2.2.2 \
+    requests==2.32.3

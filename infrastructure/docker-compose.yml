@@ -1,0 +1,224 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sentraflow-postgres
+    environment:
+      - POSTGRES_DB=sentraflow
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sentraflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: sentraflow-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:RELEASE.2024-04-18T19-09-19Z
+    container_name: sentraflow-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: sentraflow-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      /usr/bin/mc mb --ignore-existing myminio/sentraflow-lake;
+      exit 0;
+      "
+
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.1.3
+    container_name: sentraflow-redpanda
+    command: >
+      redpanda start
+      --smp 1
+      --memory 1G
+      --reserve-memory 0M
+      --overprovisioned
+      --kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      --advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+      --mode dev-container
+    ports:
+      - "9092:9092"
+      - "19092:19092"
+      - "8081:8081"
+      - "8082:8082"
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster status"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  airflow-init:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    container_name: sentraflow-airflow-init
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@postgres:5432/sentraflow
+    command: >
+      bash -c "
+      airflow db migrate &&
+      airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@sentraflow.com
+      "
+
+  airflow-webserver:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    container_name: sentraflow-airflow-webserver
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@postgres:5432/sentraflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
+      - AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL=5
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadmin
+      - WAREHOUSE_URL=postgresql://postgres:postgres@postgres:5432/sentraflow
+      - S3_ENDPOINT=http://minio:9000
+    volumes:
+      - ../pipelines/dags:/opt/airflow/dags
+      - ../pipelines/spark_jobs:/opt/airflow/spark_jobs
+      - ../pipelines/dbt:/opt/airflow/dbt
+      - ../ml:/opt/airflow/ml
+      - ../scripts:/opt/airflow/scripts
+    command: airflow webserver
+
+  airflow-scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    container_name: sentraflow-airflow-scheduler
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@postgres:5432/sentraflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
+      - AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL=5
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadmin
+      - WAREHOUSE_URL=postgresql://postgres:postgres@postgres:5432/sentraflow
+      - S3_ENDPOINT=http://minio:9000
+    volumes:
+      - ../pipelines/dags:/opt/airflow/dags
+      - ../pipelines/spark_jobs:/opt/airflow/spark_jobs
+      - ../pipelines/dbt:/opt/airflow/dbt
+      - ../ml:/opt/airflow/ml
+      - ../scripts:/opt/airflow/scripts
+    command: airflow scheduler
+
+  ml-serving:
+    build:
+      context: ../ml/serving
+      dockerfile: Dockerfile
+    container_name: sentraflow-ml-serving
+    restart: always
+    ports:
+      - "8001:8001"
+    volumes:
+      - ../ml/serving:/app
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: sentraflow-backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/sentraflow
+      - WAREHOUSE_URL=postgresql://postgres:postgres@postgres:5432/sentraflow
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BROKERS=redpanda:29092
+      - S3_ENDPOINT=http://minio:9000
+      - S3_BUCKET=sentraflow-lake
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadmin
+      - ML_SERVICE_URL=http://ml-serving:8001
+      - JWT_SECRET=supersecretjwtkeyforlocaldevelopment1234567890
+    volumes:
+      - ../backend:/backend
+
+  stream-consumer:
+    build:
+      context: ../pipelines
+      dockerfile: Dockerfile.consumer
+    container_name: sentraflow-stream-consumer
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_started
+      ml-serving:
+        condition: service_started
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/sentraflow
+      - KAFKA_BROKERS=redpanda:29092
+      - ML_SERVICE_URL=http://ml-serving:8001
+      - BACKEND_URL=http://backend:8000
+    volumes:
+      - ../pipelines/stream_consumer.py:/app/stream_consumer.py
+
+volumes:
+  postgres-data:
+  minio-data:

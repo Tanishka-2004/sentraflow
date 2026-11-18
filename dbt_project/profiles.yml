@@ -1,0 +1,18 @@
+sentraflow:
+  target: local
+  outputs:
+    local:
+      type: spark
+      method: thrift
+      host: localhost
+      port: 10000
+      schema: gold
+      threads: 4
+    athena:
+      type: athena
+      s3_staging_dir: s3://sentraflow-artifacts/athena-results/
+      schema: gold
+      database: awsdatacatalog
+      region_name: ap-south-1
+      threads: 8
+

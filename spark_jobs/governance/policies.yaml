@@ -1,0 +1,43 @@
+# SentraFlow Masking Policies
+# Maps PII classes and specific attributes to approved masking techniques:
+# - hmac_token: Deterministic HMAC-SHA256 tokenization (joinable pseudonym)
+# - partial_mask: Partial masking (e.g. XXXXX1234X for PAN, last 4 for phone/account)
+# - generalisation: DOB to age band, pincode to 3 digits, IP to subnet
+# - format_preserving_hash: Email obfuscation preserving domain
+# - redaction: Static [REDACTED] string
+
+key_version: "v1"
+default_secret_key: "sentraflow-governance-master-secret-key-local-2026"
+
+rules:
+  pan:
+    technique: partial_mask
+    mask_format: "XXXXX{digits}X"
+  aadhaar_id:
+    technique: redaction
+    replacement: "[REDACTED_AADHAAR]"
+  email:
+    technique: format_preserving_hash
+  phone:
+    technique: partial_mask
+    keep_last: 4
+  account_number:
+    technique: partial_mask
+    keep_last: 4
+  full_name:
+    technique: hmac_token
+  date_of_birth:
+    technique: generalisation
+    granularity: age_band
+  pincode:
+    technique: generalisation
+    granularity: prefix_3
+  address:
+    technique: redaction
+    replacement: "[REDACTED_ADDRESS]"
+  ip_address:
+    technique: generalisation
+    granularity: subnet_c
+  device_id:
+    technique: hmac_token
+

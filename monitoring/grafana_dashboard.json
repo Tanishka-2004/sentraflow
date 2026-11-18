@@ -1,0 +1,127 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 1,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "Row 1: Pipeline & Governance Health",
+      "type": "row"
+    },
+    {
+      "id": 1,
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 1 },
+      "title": "Batch DAG Status",
+      "type": "stat",
+      "targets": [{ "expr": "airflow_dag_status{dag_id='sentraflow_batch_pipeline'}" }]
+    },
+    {
+      "id": 2,
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 1 },
+      "title": "Last Batch Duration",
+      "type": "stat",
+      "targets": [{ "expr": "sentraflow_pipeline_duration_seconds" }]
+    },
+    {
+      "id": 3,
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 1 },
+      "title": "PII Gate Pass Rate",
+      "type": "stat",
+      "targets": [{ "expr": "sentraflow_gate_pass_rate_pct" }]
+    },
+    {
+      "id": 4,
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 1 },
+      "title": "Residual PII Leaks Blocked",
+      "type": "stat",
+      "targets": [{ "expr": "sentraflow_residual_pii_blocked_total" }]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
+      "id": 200,
+      "title": "Row 2: Ingestion Volume & Quarantine Velocity",
+      "type": "row"
+    },
+    {
+      "id": 5,
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 7 },
+      "title": "Inbound Throughput (rows/sec)",
+      "type": "timeseries",
+      "targets": [{ "expr": "rate(sentraflow_ingested_rows_total[1m])" }]
+    },
+    {
+      "id": 6,
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 7 },
+      "title": "Bronze Quarantine Rate",
+      "type": "timeseries",
+      "targets": [{ "expr": "rate(sentraflow_quarantine_records_total[1m])" }]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
+      "id": 300,
+      "title": "Row 3: Real-Time Fraud Engine & Scoring Latency",
+      "type": "row"
+    },
+    {
+      "id": 7,
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 14 },
+      "title": "Scoring Latency (p50, p95, p99 ms)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(sentraflow_scoring_latency_ms_bucket[1m])) by (le))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, sum(rate(sentraflow_scoring_latency_ms_bucket[1m])) by (le))", "legendFormat": "p95" },
+        { "expr": "histogram_quantile(0.99, sum(rate(sentraflow_scoring_latency_ms_bucket[1m])) by (le))", "legendFormat": "p99" }
+      ]
+    },
+    {
+      "id": 8,
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 14 },
+      "title": "Fraud Alert Velocity",
+      "type": "timeseries",
+      "targets": [{ "expr": "rate(sentraflow_fraud_alerts_total[1m])" }]
+    },
+    {
+      "id": 9,
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 14 },
+      "title": "Top Triggered SHAP Factors",
+      "type": "bargauge",
+      "targets": [{ "expr": "topk(5, sum by (factor) (sentraflow_shap_factor_triggered_total))" }]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 20 },
+      "id": 400,
+      "title": "Row 4: Data Quality & Schema Drift",
+      "type": "row"
+    },
+    {
+      "id": 10,
+      "gridPos": { "h": 5, "w": 12, "x": 0, "y": 21 },
+      "title": "Great Expectations Pass Rate (%)",
+      "type": "stat",
+      "targets": [{ "expr": "sentraflow_ge_suite_pass_rate" }]
+    },
+    {
+      "id": 11,
+      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 21 },
+      "title": "Schema Drift Events Logged",
+      "type": "stat",
+      "targets": [{ "expr": "sentraflow_schema_drift_events_total" }]
+    }
+  ],
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["sentraflow", "lakehouse", "fraud", "governance"],
+  "time": { "from": "now-6h", "to": "now" },
+  "title": "SentraFlow Lakehouse & Fraud Engine Observability",
+  "version": 1
+}
+

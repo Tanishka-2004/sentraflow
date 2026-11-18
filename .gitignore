@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+*/node_modules/
+.pnp
+.pnp.js
+
+# Next.js Build Output
+.next/
+*/.next/
+out/
+build/
+dist/
+
+# Python Cache & Testing
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+venv/
+.venv/
+env/
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+
+# Ephemeral Landing & Spark intermediate data
+landing/
+*.log
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# OS generated files
+.DS_Store
+Thumbs.db
