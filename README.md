@@ -1,5 +1,6 @@
 # SentraFlow: Governed Financial Data Lakehouse & Real-Time Fraud Engine
 
+[![Live Demo](https://img.shields.io/badge/Deployed%20Website-sentraflow.vercel.app-c8102e?style=for-the-badge&logo=vercel)](https://sentraflow.vercel.app)
 [![CI Gate](https://github.com/Tanishka-2004/sentraflow/actions/workflows/ci.yml/badge.svg)](https://github.com/Tanishka-2004/sentraflow/actions/workflows/ci.yml)
 [![Python Version](https://img.shields.io/badge/python-3.11%20%7C%203.14-blue.svg)](https://www.python.org/)
 [![Delta Lake](https://img.shields.io/badge/storage-Delta%20Lake%203.x-00A4E4.svg)](https://delta.io/)
@@ -7,6 +8,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 [![Coverage](https://img.shields.io/badge/coverage-88%25-brightgreen.svg)]()
 
+> **🚀 Live Website:** [https://sentraflow.vercel.app](https://sentraflow.vercel.app)  
 > **60-Second Summary:** SentraFlow is an enterprise-grade financial data lakehouse uniting batch **Medallion architecture (Bronze, Silver, Gold)** with **Apache Kafka real-time streaming fraud scoring**. Powered by **PySpark** and **Delta Lake**, governed by an **automated PII-masking security gate** that cryptographically guarantees zero residual unmasked PII reaches Silver/Gold layers, modeled in **dbt**, orchestrated by **Apache Airflow**, scored via **XGBoost + SHAP TreeExplainer (<15ms latency)**, and surfaced through a **role-governed Next.js 14 console** backed by **FastAPI**.
 
 ---
